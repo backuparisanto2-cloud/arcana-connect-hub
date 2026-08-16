@@ -62,7 +62,7 @@ export function normalizeDeviceInput(input: DeviceInput) {
     mac_address: clean(input.mac_address),
     username: clean(input.username),
     password: clean(input.password),
-    ssid: type === "Access Point" ? clean(input.ssid) : clean(input.ssid),
+    ssid: clean(input.ssid),
     wifi_password: clean(input.wifi_password),
     notes: clean(input.notes),
   };
