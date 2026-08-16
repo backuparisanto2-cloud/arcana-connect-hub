@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 import { SiteHeader } from "../components/SiteHeader";
+import { Ether1Graph } from "../components/Ether1Graph";
 import { StatCard, UsageBar } from "../components/StatCard";
 import { getRouterStatus } from "../lib/mikrotik.functions";
 import { formatBytes, formatUptime } from "../lib/mikrotik-types";
