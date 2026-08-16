@@ -1,57 +1,47 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
-import { Copy, Eye, EyeOff, Pencil, Plus, Trash2 } from "lucide-react";
+import { Copy, Pencil, Plus, Trash2, Upload } from "lucide-react";
 
 import { SiteHeader } from "@/components/SiteHeader";
-import {
-  createDevice,
-  deleteDevice,
-  listDevices,
-  updateDevice,
-} from "@/lib/devices.functions";
+import { DeviceImage } from "@/components/DeviceImage";
+import { supabase } from "@/integrations/supabase/client";
+import { uploadDeviceImage } from "@/lib/device-image";
 import {
   DEVICE_TYPES,
   EMPTY_DEVICE,
+  normalizeDeviceInput,
   type Device,
   type DeviceInput,
 } from "@/lib/devices-types";
 
-export const Route = createFileRoute("/_authenticated/perangkat")({
+export const Route = createFileRoute("/perangkat")({
   head: () => ({
     meta: [
       { title: "Daftar Perangkat Jaringan — Griya Arca Putri" },
       {
         name: "description",
         content:
-          "Sheet perangkat jaringan kost: IP address, MAC address, user, password, dan SSID access point.",
+          "Sheet perangkat jaringan kost: seri perangkat, foto, IP address, user, password, dan SSID access point.",
       },
       { property: "og:title", content: "Daftar Perangkat Jaringan — Griya Arca Putri" },
       {
         property: "og:description",
         content: "Catatan perangkat jaringan kost Griya Arca Putri.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
     ],
   }),
   component: DevicesPage,
 });
 
-function SecretCell({ value }: { value: string | null }) {
-  const [shown, setShown] = useState(false);
+function CopyText({ value, mono = false }: { value: string | null; mono?: boolean }) {
   if (!value) return <span className="text-muted-foreground">-</span>;
   return (
     <span className="inline-flex items-center gap-1.5">
-      <span className="font-mono text-xs">{shown ? value : "••••••••"}</span>
-      <button
-        type="button"
-        onClick={() => setShown((s) => !s)}
-        className="text-muted-foreground hover:text-primary"
-        aria-label={shown ? "Sembunyikan" : "Lihat"}
-      >
-        {shown ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-      </button>
+      <span className={mono ? "font-mono text-xs" : ""}>{value}</span>
       <button
         type="button"
         onClick={() => void navigator.clipboard?.writeText(value)}
@@ -90,27 +80,38 @@ function Field({
 
 function DevicesPage() {
   const queryClient = useQueryClient();
-  const fetchDevices = useServerFn(listDevices);
-  const addFn = useServerFn(createDevice);
-  const editFn = useServerFn(updateDevice);
-  const removeFn = useServerFn(deleteDevice);
 
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("Semua");
   const [editing, setEditing] = useState<null | { id?: string; values: DeviceInput }>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const query = useQuery({
     queryKey: ["devices"],
-    queryFn: () => fetchDevices(),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("devices")
+        .select("*")
+        .order("name", { ascending: true });
+      if (error) throw new Error(error.message);
+      return (data ?? []) as Device[];
+    },
   });
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["devices"] });
 
   const saveMutation = useMutation({
-    mutationFn: async (payload: { id?: string; values: DeviceInput }) =>
-      payload.id
-        ? editFn({ data: { ...payload.values, id: payload.id } })
-        : addFn({ data: payload.values }),
+    mutationFn: async (payload: { id?: string; values: DeviceInput }) => {
+      const values = normalizeDeviceInput(payload.values);
+      if (payload.id) {
+        const { error } = await supabase.from("devices").update(values).eq("id", payload.id);
+        if (error) throw new Error(error.message);
+      } else {
+        const { error } = await supabase.from("devices").insert(values);
+        if (error) throw new Error(error.message);
+      }
+    },
     onSuccess: () => {
       setEditing(null);
       void invalidate();
@@ -118,28 +119,47 @@ function DevicesPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => removeFn({ data: { id } }),
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("devices").delete().eq("id", id);
+      if (error) throw new Error(error.message);
+    },
     onSuccess: () => void invalidate(),
   });
 
-  const devices = (query.data ?? []) as Device[];
+  const devices = query.data ?? [];
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return devices.filter((d) => {
       if (typeFilter !== "Semua" && d.device_type !== typeFilter) return false;
       if (!q) return true;
-      return [d.name, d.location, d.ip_address, d.mac_address, d.ssid, d.username]
+      return [d.name, d.location, d.serial_number, d.ip_address, d.ssid, d.username]
         .filter(Boolean)
         .some((v) => String(v).toLowerCase().includes(q));
     });
   }, [devices, search, typeFilter]);
 
+  const handleUpload = async (file: File) => {
+    if (!editing) return;
+    setUploadError(null);
+    setUploading(true);
+    try {
+      const path = await uploadDeviceImage(file);
+      setEditing((prev) => (prev ? { ...prev, values: { ...prev.values, image_url: path } } : prev));
+    } catch (e) {
+      setUploadError(e instanceof Error ? e.message : "Gagal mengunggah gambar.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const isAp = editing?.values.device_type === "Access Point";
+
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader isFetching={query.isFetching} onRefresh={() => void invalidate()} />
 
-      <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
+      <main className="mx-auto max-w-7xl px-3 py-6 sm:px-6 sm:py-8">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h2 className="font-display text-xl font-semibold sm:text-2xl">Daftar Perangkat</h2>
@@ -148,7 +168,10 @@ function DevicesPage() {
             </p>
           </div>
           <button
-            onClick={() => setEditing({ values: { ...EMPTY_DEVICE } })}
+            onClick={() => {
+              setUploadError(null);
+              setEditing({ values: { ...EMPTY_DEVICE } });
+            }}
             className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
             <Plus className="h-4 w-4" /> Tambah perangkat
@@ -159,7 +182,7 @@ function DevicesPage() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Cari nama, IP, MAC, SSID…"
+            placeholder="Cari nama, seri, IP, SSID…"
             className="min-w-[200px] flex-1 rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-primary"
           />
           <select
@@ -183,15 +206,21 @@ function DevicesPage() {
 
         {/* Kartu untuk layar kecil */}
         <div className="mt-5 grid gap-3 md:hidden">
-          {filtered.map((d) => (
+          {filtered.map((d, i) => (
             <article key={d.id} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <h3 className="font-display text-base font-semibold">{d.name}</h3>
-                  <p className="text-xs text-muted-foreground">
-                    {d.device_type}
-                    {d.location ? ` · ${d.location}` : ""}
-                  </p>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex min-w-0 items-start gap-3">
+                  <DeviceImage path={d.image_url} alt={d.name} className="h-14 w-14 shrink-0" />
+                  <div className="min-w-0">
+                    <h3 className="font-display text-base font-semibold">
+                      <span className="mr-1 text-muted-foreground">{i + 1}.</span>
+                      {d.name}
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      {d.device_type}
+                      {d.location ? ` · ${d.location}` : ""}
+                    </p>
+                  </div>
                 </div>
                 <RowActions
                   onEdit={() => setEditing({ id: d.id, values: toInput(d) })}
@@ -199,26 +228,30 @@ function DevicesPage() {
                 />
               </div>
               <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-xs">
+                <dt className="text-muted-foreground">Seri</dt>
+                <dd className="font-mono">{d.serial_number ?? "-"}</dd>
                 <dt className="text-muted-foreground">IP</dt>
                 <dd className="font-mono">{d.ip_address ?? "-"}</dd>
-                <dt className="text-muted-foreground">MAC</dt>
-                <dd className="font-mono">{d.mac_address ?? "-"}</dd>
                 <dt className="text-muted-foreground">User</dt>
                 <dd>{d.username ?? "-"}</dd>
                 <dt className="text-muted-foreground">Password</dt>
                 <dd>
-                  <SecretCell value={d.password} />
+                  <CopyText value={d.password} mono />
                 </dd>
-                <dt className="text-muted-foreground">SSID</dt>
-                <dd>{d.ssid ?? "-"}</dd>
-                <dt className="text-muted-foreground">Pass WiFi</dt>
-                <dd>
-                  <SecretCell value={d.wifi_password} />
-                </dd>
+                {d.device_type === "Access Point" && (
+                  <>
+                    <dt className="text-muted-foreground">SSID</dt>
+                    <dd>{d.ssid ?? "-"}</dd>
+                  </>
+                )}
               </dl>
-              {d.notes && <p className="mt-2 text-xs text-muted-foreground">{d.notes}</p>}
             </article>
           ))}
+          {filtered.length === 0 && !query.isLoading && (
+            <p className="py-6 text-center text-sm text-muted-foreground">
+              Belum ada perangkat yang cocok.
+            </p>
+          )}
         </div>
 
         {/* Tabel untuk desktop */}
@@ -226,30 +259,43 @@ function DevicesPage() {
           <table className="w-full text-left text-sm">
             <thead className="bg-secondary/60 text-xs text-muted-foreground">
               <tr>
-                {["Nama", "Tipe", "Lokasi", "IP", "MAC", "User", "Password", "SSID", "Pass WiFi", ""].map(
-                  (h) => (
-                    <th key={h} className="whitespace-nowrap px-3 py-2.5 font-medium">
-                      {h}
-                    </th>
-                  ),
-                )}
+                {[
+                  "No",
+                  "Nama",
+                  "Tipe Perangkat",
+                  "Posisi",
+                  "Seri Perangkat",
+                  "Gambar",
+                  "IP Address",
+                  "User",
+                  "Password",
+                  "SSID",
+                  "",
+                ].map((h) => (
+                  <th key={h} className="whitespace-nowrap px-3 py-2.5 font-medium">
+                    {h}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
-              {filtered.map((d) => (
+              {filtered.map((d, i) => (
                 <tr key={d.id} className="border-t border-border/70">
+                  <td className="px-3 py-2.5 text-muted-foreground">{i + 1}</td>
                   <td className="px-3 py-2.5 font-medium">{d.name}</td>
                   <td className="px-3 py-2.5 text-muted-foreground">{d.device_type}</td>
                   <td className="px-3 py-2.5 text-muted-foreground">{d.location ?? "-"}</td>
+                  <td className="px-3 py-2.5 font-mono text-xs">{d.serial_number ?? "-"}</td>
+                  <td className="px-3 py-2.5">
+                    <DeviceImage path={d.image_url} alt={d.name} />
+                  </td>
                   <td className="px-3 py-2.5 font-mono text-xs">{d.ip_address ?? "-"}</td>
-                  <td className="px-3 py-2.5 font-mono text-xs">{d.mac_address ?? "-"}</td>
                   <td className="px-3 py-2.5">{d.username ?? "-"}</td>
                   <td className="px-3 py-2.5">
-                    <SecretCell value={d.password} />
+                    <CopyText value={d.password} mono />
                   </td>
-                  <td className="px-3 py-2.5">{d.ssid ?? "-"}</td>
                   <td className="px-3 py-2.5">
-                    <SecretCell value={d.wifi_password} />
+                    {d.device_type === "Access Point" ? (d.ssid ?? "-") : "-"}
                   </td>
                   <td className="px-3 py-2.5">
                     <RowActions
@@ -282,7 +328,7 @@ function DevicesPage() {
                 onChange={(v) => setEditing({ ...editing, values: { ...editing.values, name: v } })}
               />
               <label className="block">
-                <span className="text-xs font-medium text-muted-foreground">Tipe</span>
+                <span className="text-xs font-medium text-muted-foreground">Tipe perangkat</span>
                 <select
                   value={editing.values.device_type}
                   onChange={(e) =>
@@ -301,50 +347,105 @@ function DevicesPage() {
                 </select>
               </label>
               <Field
-                label="Lokasi"
+                label="Posisi"
                 value={editing.values.location ?? ""}
                 onChange={(v) =>
                   setEditing({ ...editing, values: { ...editing.values, location: v } })
                 }
               />
               <Field
-                label="IP address"
+                label="Seri perangkat"
+                value={editing.values.serial_number ?? ""}
+                onChange={(v) =>
+                  setEditing({ ...editing, values: { ...editing.values, serial_number: v } })
+                }
+              />
+
+              <div className="sm:col-span-2">
+                <span className="text-xs font-medium text-muted-foreground">Gambar perangkat</span>
+                <div className="mt-1 flex items-center gap-3">
+                  <DeviceImage
+                    path={editing.values.image_url ?? null}
+                    alt="Pratinjau"
+                    className="h-16 w-16"
+                  />
+                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm hover:bg-secondary">
+                    <Upload className="h-4 w-4" />
+                    {uploading ? "Mengunggah…" : "Pilih foto"}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={uploading}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) void handleUpload(file);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                  {editing.values.image_url && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setEditing({ ...editing, values: { ...editing.values, image_url: "" } })
+                      }
+                      className="text-xs text-muted-foreground hover:text-destructive"
+                    >
+                      Hapus foto
+                    </button>
+                  )}
+                </div>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  Otomatis dikompres ke WebP maksimal 300 KB.
+                </p>
+                {uploadError && <p className="mt-1 text-xs text-destructive">{uploadError}</p>}
+              </div>
+
+              <Field
+                label="IP address perangkat"
                 value={editing.values.ip_address ?? ""}
                 onChange={(v) =>
                   setEditing({ ...editing, values: { ...editing.values, ip_address: v } })
                 }
               />
               <Field
-                label="MAC address"
-                value={editing.values.mac_address ?? ""}
-                onChange={(v) =>
-                  setEditing({ ...editing, values: { ...editing.values, mac_address: v } })
-                }
-              />
-              <Field
-                label="User login"
+                label="User perangkat"
                 value={editing.values.username ?? ""}
                 onChange={(v) =>
                   setEditing({ ...editing, values: { ...editing.values, username: v } })
                 }
               />
               <Field
-                label="Password login"
+                label="Password perangkat"
                 value={editing.values.password ?? ""}
                 onChange={(v) =>
                   setEditing({ ...editing, values: { ...editing.values, password: v } })
                 }
               />
+              {isAp && (
+                <>
+                  <Field
+                    label="SSID (Access Point)"
+                    value={editing.values.ssid ?? ""}
+                    onChange={(v) =>
+                      setEditing({ ...editing, values: { ...editing.values, ssid: v } })
+                    }
+                  />
+                  <Field
+                    label="Password WiFi"
+                    value={editing.values.wifi_password ?? ""}
+                    onChange={(v) =>
+                      setEditing({ ...editing, values: { ...editing.values, wifi_password: v } })
+                    }
+                  />
+                </>
+              )}
               <Field
-                label="SSID (Access Point)"
-                value={editing.values.ssid ?? ""}
-                onChange={(v) => setEditing({ ...editing, values: { ...editing.values, ssid: v } })}
-              />
-              <Field
-                label="Password WiFi"
-                value={editing.values.wifi_password ?? ""}
+                label="MAC address"
+                value={editing.values.mac_address ?? ""}
                 onChange={(v) =>
-                  setEditing({ ...editing, values: { ...editing.values, wifi_password: v } })
+                  setEditing({ ...editing, values: { ...editing.values, mac_address: v } })
                 }
               />
               <label className="block sm:col-span-2">
@@ -377,7 +478,7 @@ function DevicesPage() {
               </button>
               <button
                 onClick={() => saveMutation.mutate(editing)}
-                disabled={saveMutation.isPending}
+                disabled={saveMutation.isPending || uploading}
                 className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
               >
                 {saveMutation.isPending ? "Menyimpan…" : "Simpan"}
@@ -418,6 +519,8 @@ function toInput(d: Device): DeviceInput {
     name: d.name,
     device_type: d.device_type,
     location: d.location ?? "",
+    serial_number: d.serial_number ?? "",
+    image_url: d.image_url ?? "",
     ip_address: d.ip_address ?? "",
     mac_address: d.mac_address ?? "",
     username: d.username ?? "",
