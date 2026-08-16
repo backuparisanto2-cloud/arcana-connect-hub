@@ -11,13 +11,14 @@ const FALLBACK_LINKS = [
  * tampil di halaman https, dengan failsafe dua sumber di sisi server.
  */
 export function Ether1Graph({ refreshKey }: { refreshKey?: number }) {
-  const [stamp, setStamp] = useState(() => Date.now());
+  const [stamp, setStamp] = useState(0);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     setStamp(Date.now());
     setFailed(false);
   }, [refreshKey]);
+
 
   return (
     <section className="card-elevated mt-6 rounded-2xl border border-border p-4 sm:p-5">
