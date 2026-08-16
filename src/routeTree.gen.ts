@@ -10,20 +10,15 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as GraphRouteImport } from './routes/graph'
 import { Route as HotspotRouteImport } from './routes/hotspot'
-import { Route as AuthenticatedPerangkatRouteImport } from './routes/_authenticated/perangkat'
+import { Route as PerangkatRouteImport } from './routes/perangkat'
 import { Route as ApiGraphEther1DotgifRouteImport } from './routes/api/graph/ether1[.]gif'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
-  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -41,10 +36,10 @@ const HotspotRoute = HotspotRouteImport.update({
   path: '/hotspot',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedPerangkatRoute = AuthenticatedPerangkatRouteImport.update({
+const PerangkatRoute = PerangkatRouteImport.update({
   id: '/perangkat',
   path: '/perangkat',
-  getParentRoute: () => AuthenticatedRouteRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiGraphEther1DotgifRoute = ApiGraphEther1DotgifRouteImport.update({
   id: '/api/graph/ether1.gif',
@@ -57,7 +52,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/graph': typeof GraphRoute
   '/hotspot': typeof HotspotRoute
-  '/perangkat': typeof AuthenticatedPerangkatRoute
+  '/perangkat': typeof PerangkatRoute
   '/api/graph/ether1.gif': typeof ApiGraphEther1DotgifRoute
 }
 export interface FileRoutesByTo {
@@ -65,17 +60,16 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/graph': typeof GraphRoute
   '/hotspot': typeof HotspotRoute
-  '/perangkat': typeof AuthenticatedPerangkatRoute
+  '/perangkat': typeof PerangkatRoute
   '/api/graph/ether1.gif': typeof ApiGraphEther1DotgifRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/graph': typeof GraphRoute
   '/hotspot': typeof HotspotRoute
-  '/_authenticated/perangkat': typeof AuthenticatedPerangkatRoute
+  '/perangkat': typeof PerangkatRoute
   '/api/graph/ether1.gif': typeof ApiGraphEther1DotgifRoute
 }
 export interface FileRouteTypes {
@@ -98,20 +92,19 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
-    | '/_authenticated'
     | '/auth'
     | '/graph'
     | '/hotspot'
-    | '/_authenticated/perangkat'
+    | '/perangkat'
     | '/api/graph/ether1.gif'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   GraphRoute: typeof GraphRoute
   HotspotRoute: typeof HotspotRoute
+  PerangkatRoute: typeof PerangkatRoute
   ApiGraphEther1DotgifRoute: typeof ApiGraphEther1DotgifRoute
 }
 
@@ -122,13 +115,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated': {
-      id: '/_authenticated'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -152,12 +138,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HotspotRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/perangkat': {
-      id: '/_authenticated/perangkat'
+    '/perangkat': {
+      id: '/perangkat'
       path: '/perangkat'
       fullPath: '/perangkat'
-      preLoaderRoute: typeof AuthenticatedPerangkatRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      preLoaderRoute: typeof PerangkatRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/graph/ether1.gif': {
       id: '/api/graph/ether1.gif'
@@ -169,23 +155,12 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface AuthenticatedRouteRouteChildren {
-  AuthenticatedPerangkatRoute: typeof AuthenticatedPerangkatRoute
-}
-
-const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedPerangkatRoute: AuthenticatedPerangkatRoute,
-}
-
-const AuthenticatedRouteRouteWithChildren =
-  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   GraphRoute: GraphRoute,
   HotspotRoute: HotspotRoute,
+  PerangkatRoute: PerangkatRoute,
   ApiGraphEther1DotgifRoute: ApiGraphEther1DotgifRoute,
 }
 export const routeTree = rootRouteImport
