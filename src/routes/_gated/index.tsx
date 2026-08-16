@@ -13,14 +13,14 @@ import {
   TriangleAlert,
 } from "lucide-react";
 
-import { SiteHeader } from "../components/SiteHeader";
-import { Ether1Graph } from "../components/Ether1Graph";
-import { StatCard, UsageBar } from "../components/StatCard";
-import { getRouterStatus } from "../lib/mikrotik.functions";
-import { formatBytes, formatUptime } from "../lib/mikrotik-types";
+import { SiteHeader } from "@/components/SiteHeader";
+import { Ether1Graph } from "@/components/Ether1Graph";
+import { StatCard, UsageBar } from "@/components/StatCard";
+import { getRouterStatus } from "@/lib/mikrotik.functions";
+import { formatBytes, formatUptime } from "@/lib/mikrotik-types";
 
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/_gated/")({
   head: () => ({
     meta: [
       { title: "Griya Arca Putri — Monitor Jaringan Router" },

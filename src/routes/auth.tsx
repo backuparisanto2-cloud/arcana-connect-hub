@@ -2,19 +2,21 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { LockKeyhole } from "lucide-react";
 
-import { supabase } from "@/integrations/supabase/client";
-import { SiteHeader } from "@/components/SiteHeader";
+import { unlockSite } from "@/lib/gate.functions";
+import logo from "../assets/logo.png";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Masuk Pengelola — Griya Arca Putri" },
+      { title: "Masuk — Griya Arca Putri" },
       {
         name: "description",
-        content: "Halaman masuk pengelola untuk membuka data perangkat jaringan Griya Arca Putri.",
+        content: "Halaman masuk pengelola jaringan Griya Arca Putri.",
       },
-      { property: "og:title", content: "Masuk Pengelola — Griya Arca Putri" },
-      { property: "og:description", content: "Masuk untuk mengelola daftar perangkat kost." },
+      { property: "og:title", content: "Masuk — Griya Arca Putri" },
+      { property: "og:description", content: "Masuk untuk membuka monitor jaringan kost." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -23,108 +25,80 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"login" | "signup">("login");
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    setMessage(null);
     try {
-      if (mode === "login") {
-        const { error: err } = await supabase.auth.signInWithPassword({ email, password });
-        if (err) throw err;
-        await navigate({ to: "/perangkat" });
-      } else {
-        const { error: err } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { emailRedirectTo: `${window.location.origin}/perangkat` },
-        });
-        if (err) throw err;
-        setMessage("Akun dibuat. Bila diminta, cek email untuk konfirmasi lalu masuk.");
-        setMode("login");
+      const { ok } = await unlockSite({ data: { username, password } });
+      if (!ok) {
+        setError("Username atau password salah.");
+        return;
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Gagal memproses permintaan.");
+      await navigate({ to: "/", replace: true });
+    } catch {
+      setError("Gagal masuk, coba lagi.");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <SiteHeader isFetching={false} onRefresh={() => window.location.reload()} />
-      <main className="mx-auto flex max-w-md flex-col px-4 py-10 sm:px-6">
-        <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-          <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
-            <LockKeyhole className="h-5 w-5" />
-          </span>
-          <h2 className="mt-4 font-display text-xl font-semibold">
-            {mode === "login" ? "Masuk Pengelola" : "Daftar Akun Pengelola"}
-          </h2>
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
+      <div className="w-full max-w-sm">
+        <div className="flex flex-col items-center text-center">
+          <img src={logo} alt="Logo Griya Arca Putri" className="h-16 w-auto object-contain" />
+          <h1 className="mt-4 font-display text-xl font-semibold">
+            Griya <span className="text-gradient-brand">Arca Putri</span>
+          </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Data perangkat berisi password, jadi hanya bisa dibuka setelah masuk.
+            Masuk untuk membuka monitor jaringan.
           </p>
+        </div>
 
-          <form onSubmit={onSubmit} className="mt-5 space-y-3">
-            <div>
-              <label className="text-xs font-medium text-muted-foreground" htmlFor="email">
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-muted-foreground" htmlFor="password">
-                Password
-              </label>
-              <input
-                id="password"
-                type="password"
-                required
-                minLength={6}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-              />
-            </div>
+        <form
+          onSubmit={onSubmit}
+          className="card-elevated mt-6 space-y-4 rounded-2xl border border-border p-5"
+        >
+          <label className="block">
+            <span className="text-xs font-medium text-muted-foreground">Username</span>
+            <input
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              autoComplete="username"
+              required
+              className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+            />
+          </label>
+          <label className="block">
+            <span className="text-xs font-medium text-muted-foreground">Password</span>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              required
+              className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+            />
+          </label>
 
-            {error && <p className="text-sm text-destructive">{error}</p>}
-            {message && <p className="text-sm text-primary">{message}</p>}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
-            >
-              {loading ? "Memproses…" : mode === "login" ? "Masuk" : "Daftar"}
-            </button>
-          </form>
+          {error && <p className="text-sm text-destructive">{error}</p>}
 
           <button
-            onClick={() => {
-              setMode(mode === "login" ? "signup" : "login");
-              setError(null);
-              setMessage(null);
-            }}
-            className="mt-4 w-full text-center text-sm text-muted-foreground hover:text-primary"
+            type="submit"
+            disabled={loading}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
           >
-            {mode === "login" ? "Belum punya akun? Daftar" : "Sudah punya akun? Masuk"}
+            <LockKeyhole className="h-4 w-4" />
+            {loading ? "Memeriksa…" : "Masuk"}
           </button>
-        </div>
-      </main>
+        </form>
+      </div>
     </div>
   );
 }

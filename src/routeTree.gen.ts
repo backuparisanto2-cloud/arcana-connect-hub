@@ -9,16 +9,16 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as GatedRouteRouteImport } from './routes/_gated/route'
 import { Route as AuthRouteImport } from './routes/auth'
-import { Route as GraphRouteImport } from './routes/graph'
-import { Route as HotspotRouteImport } from './routes/hotspot'
-import { Route as PerangkatRouteImport } from './routes/perangkat'
+import { Route as GatedIndexRouteImport } from './routes/_gated/index'
+import { Route as GatedGraphRouteImport } from './routes/_gated/graph'
+import { Route as GatedHotspotRouteImport } from './routes/_gated/hotspot'
+import { Route as GatedPerangkatRouteImport } from './routes/_gated/perangkat'
 import { Route as ApiGraphEther1DotgifRouteImport } from './routes/api/graph/ether1[.]gif'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const GatedRouteRoute = GatedRouteRouteImport.update({
+  id: '/_gated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -26,20 +26,25 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const GraphRoute = GraphRouteImport.update({
+const GatedIndexRoute = GatedIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => GatedRouteRoute,
+} as any)
+const GatedGraphRoute = GatedGraphRouteImport.update({
   id: '/graph',
   path: '/graph',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => GatedRouteRoute,
 } as any)
-const HotspotRoute = HotspotRouteImport.update({
+const GatedHotspotRoute = GatedHotspotRouteImport.update({
   id: '/hotspot',
   path: '/hotspot',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => GatedRouteRoute,
 } as any)
-const PerangkatRoute = PerangkatRouteImport.update({
+const GatedPerangkatRoute = GatedPerangkatRouteImport.update({
   id: '/perangkat',
   path: '/perangkat',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => GatedRouteRoute,
 } as any)
 const ApiGraphEther1DotgifRoute = ApiGraphEther1DotgifRouteImport.update({
   id: '/api/graph/ether1.gif',
@@ -48,28 +53,29 @@ const ApiGraphEther1DotgifRoute = ApiGraphEther1DotgifRouteImport.update({
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
+  '/': typeof GatedIndexRoute
   '/auth': typeof AuthRoute
-  '/graph': typeof GraphRoute
-  '/hotspot': typeof HotspotRoute
-  '/perangkat': typeof PerangkatRoute
+  '/graph': typeof GatedGraphRoute
+  '/hotspot': typeof GatedHotspotRoute
+  '/perangkat': typeof GatedPerangkatRoute
   '/api/graph/ether1.gif': typeof ApiGraphEther1DotgifRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-  '/graph': typeof GraphRoute
-  '/hotspot': typeof HotspotRoute
-  '/perangkat': typeof PerangkatRoute
+  '/graph': typeof GatedGraphRoute
+  '/hotspot': typeof GatedHotspotRoute
+  '/perangkat': typeof GatedPerangkatRoute
+  '/': typeof GatedIndexRoute
   '/api/graph/ether1.gif': typeof ApiGraphEther1DotgifRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
+  '/_gated': typeof GatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
-  '/graph': typeof GraphRoute
-  '/hotspot': typeof HotspotRoute
-  '/perangkat': typeof PerangkatRoute
+  '/_gated/graph': typeof GatedGraphRoute
+  '/_gated/hotspot': typeof GatedHotspotRoute
+  '/_gated/perangkat': typeof GatedPerangkatRoute
+  '/_gated/': typeof GatedIndexRoute
   '/api/graph/ether1.gif': typeof ApiGraphEther1DotgifRoute
 }
 export interface FileRouteTypes {
@@ -83,38 +89,36 @@ export interface FileRouteTypes {
     | '/api/graph/ether1.gif'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/'
     | '/auth'
     | '/graph'
     | '/hotspot'
     | '/perangkat'
+    | '/'
     | '/api/graph/ether1.gif'
   id:
     | '__root__'
-    | '/'
+    | '/_gated'
     | '/auth'
-    | '/graph'
-    | '/hotspot'
-    | '/perangkat'
+    | '/_gated/graph'
+    | '/_gated/hotspot'
+    | '/_gated/perangkat'
+    | '/_gated/'
     | '/api/graph/ether1.gif'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
+  GatedRouteRoute: typeof GatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
-  GraphRoute: typeof GraphRoute
-  HotspotRoute: typeof HotspotRoute
-  PerangkatRoute: typeof PerangkatRoute
   ApiGraphEther1DotgifRoute: typeof ApiGraphEther1DotgifRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
+    '/_gated': {
+      id: '/_gated'
+      path: ''
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+      preLoaderRoute: typeof GatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -124,26 +128,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/graph': {
-      id: '/graph'
+    '/_gated/': {
+      id: '/_gated/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof GatedIndexRouteImport
+      parentRoute: typeof GatedRouteRoute
+    }
+    '/_gated/graph': {
+      id: '/_gated/graph'
       path: '/graph'
       fullPath: '/graph'
-      preLoaderRoute: typeof GraphRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof GatedGraphRouteImport
+      parentRoute: typeof GatedRouteRoute
     }
-    '/hotspot': {
-      id: '/hotspot'
+    '/_gated/hotspot': {
+      id: '/_gated/hotspot'
       path: '/hotspot'
       fullPath: '/hotspot'
-      preLoaderRoute: typeof HotspotRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof GatedHotspotRouteImport
+      parentRoute: typeof GatedRouteRoute
     }
-    '/perangkat': {
-      id: '/perangkat'
+    '/_gated/perangkat': {
+      id: '/_gated/perangkat'
       path: '/perangkat'
       fullPath: '/perangkat'
-      preLoaderRoute: typeof PerangkatRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof GatedPerangkatRouteImport
+      parentRoute: typeof GatedRouteRoute
     }
     '/api/graph/ether1.gif': {
       id: '/api/graph/ether1.gif'
@@ -155,12 +166,27 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface GatedRouteRouteChildren {
+  GatedGraphRoute: typeof GatedGraphRoute
+  GatedHotspotRoute: typeof GatedHotspotRoute
+  GatedPerangkatRoute: typeof GatedPerangkatRoute
+  GatedIndexRoute: typeof GatedIndexRoute
+}
+
+const GatedRouteRouteChildren: GatedRouteRouteChildren = {
+  GatedGraphRoute: GatedGraphRoute,
+  GatedHotspotRoute: GatedHotspotRoute,
+  GatedPerangkatRoute: GatedPerangkatRoute,
+  GatedIndexRoute: GatedIndexRoute,
+}
+
+const GatedRouteRouteWithChildren = GatedRouteRoute._addFileChildren(
+  GatedRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
+  GatedRouteRoute: GatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
-  GraphRoute: GraphRoute,
-  HotspotRoute: HotspotRoute,
-  PerangkatRoute: PerangkatRoute,
   ApiGraphEther1DotgifRoute: ApiGraphEther1DotgifRoute,
 }
 export const routeTree = rootRouteImport

@@ -1,9 +1,9 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { LogIn, LogOut, Menu, RefreshCw } from "lucide-react";
-import { useEffect, useState } from "react";
+import { LogOut, Menu, RefreshCw } from "lucide-react";
+import { useState } from "react";
 
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { supabase } from "@/integrations/supabase/client";
+import { lockSite } from "@/lib/gate.functions";
 import logo from "../assets/logo.png";
 
 const NAV = [
@@ -21,26 +21,11 @@ export function SiteHeader({
   isFetching: boolean;
 }) {
   const navigate = useNavigate();
-  const [signedIn, setSignedIn] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
-  useEffect(() => {
-    let active = true;
-    void supabase.auth.getSession().then(({ data }) => {
-      if (active) setSignedIn(Boolean(data.session));
-    });
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSignedIn(Boolean(session));
-    });
-    return () => {
-      active = false;
-      sub.subscription.unsubscribe();
-    };
-  }, []);
-
   const signOut = async () => {
-    await supabase.auth.signOut();
-    await navigate({ to: "/" });
+    await lockSite();
+    await navigate({ to: "/auth", replace: true });
   };
 
   return (
@@ -97,8 +82,7 @@ export function SiteHeader({
                   <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
                   Perbarui data
                 </button>
-                {signedIn ? (
-                  <button
+                                  <button
                     onClick={async () => {
                       setMenuOpen(false);
                       await signOut();
@@ -107,15 +91,6 @@ export function SiteHeader({
                   >
                     <LogOut className="h-4 w-4" /> Keluar
                   </button>
-                ) : (
-                  <Link
-                    to="/auth"
-                    onClick={() => setMenuOpen(false)}
-                    className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary"
-                  >
-                    <LogIn className="h-4 w-4" /> Masuk
-                  </Link>
-                )}
               </div>
             </SheetContent>
           </Sheet>
@@ -147,23 +122,13 @@ export function SiteHeader({
             <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
             <span className="hidden sm:inline">Perbarui</span>
           </button>
-          {signedIn ? (
-            <button
+                      <button
               onClick={() => void signOut()}
               className="hidden items-center gap-2 rounded-full border border-border bg-card px-3 py-2 text-sm font-medium text-muted-foreground shadow-sm transition-colors hover:bg-secondary md:inline-flex"
             >
               <LogOut className="h-4 w-4" />
               Keluar
             </button>
-          ) : (
-            <Link
-              to="/auth"
-              className="hidden items-center gap-2 rounded-full border border-border bg-card px-3 py-2 text-sm font-medium text-muted-foreground shadow-sm transition-colors hover:bg-secondary md:inline-flex"
-            >
-              <LogIn className="h-4 w-4" />
-              Masuk
-            </Link>
-          )}
         </div>
       </div>
 

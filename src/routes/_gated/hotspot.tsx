@@ -4,11 +4,11 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { Search, TriangleAlert, Users, Wifi, WifiOff } from "lucide-react";
 
-import { SiteHeader } from "../components/SiteHeader";
-import { getHotspotUsers } from "../lib/mikrotik.functions";
-import { formatBytes, formatUptime } from "../lib/mikrotik-types";
+import { SiteHeader } from "@/components/SiteHeader";
+import { getHotspotUsers } from "@/lib/mikrotik.functions";
+import { formatBytes, formatUptime } from "@/lib/mikrotik-types";
 
-export const Route = createFileRoute("/hotspot")({
+export const Route = createFileRoute("/_gated/hotspot")({
   head: () => ({
     meta: [
       { title: "User Hotspot — Griya Arca Putri" },

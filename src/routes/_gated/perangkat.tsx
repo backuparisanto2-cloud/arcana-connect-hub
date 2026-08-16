@@ -15,7 +15,7 @@ import {
   type DeviceInput,
 } from "@/lib/devices-types";
 
-export const Route = createFileRoute("/perangkat")({
+export const Route = createFileRoute("/_gated/perangkat")({
   head: () => ({
     meta: [
       { title: "Daftar Perangkat Jaringan — Griya Arca Putri" },

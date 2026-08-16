@@ -5,7 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { SiteHeader } from "@/components/SiteHeader";
 
-export const Route = createFileRoute("/graph")({
+export const Route = createFileRoute("/_gated/graph")({
   head: () => ({
     meta: [
       { title: "Graph Trafik Router — Griya Arca Putri" },
