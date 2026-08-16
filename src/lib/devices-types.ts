@@ -14,6 +14,8 @@ export type Device = {
   name: string;
   device_type: string;
   location: string | null;
+  serial_number: string | null;
+  image_url: string | null;
   ip_address: string | null;
   mac_address: string | null;
   username: string | null;
@@ -29,6 +31,8 @@ export type DeviceInput = {
   name: string;
   device_type: string;
   location?: string | null;
+  serial_number?: string | null;
+  image_url?: string | null;
   ip_address?: string | null;
   mac_address?: string | null;
   username?: string | null;
@@ -52,11 +56,13 @@ export function normalizeDeviceInput(input: DeviceInput) {
     name,
     device_type: type,
     location: clean(input.location),
+    serial_number: clean(input.serial_number),
+    image_url: clean(input.image_url),
     ip_address: clean(input.ip_address),
     mac_address: clean(input.mac_address),
     username: clean(input.username),
     password: clean(input.password),
-    ssid: clean(input.ssid),
+    ssid: type === "Access Point" ? clean(input.ssid) : clean(input.ssid),
     wifi_password: clean(input.wifi_password),
     notes: clean(input.notes),
   };
@@ -66,6 +72,8 @@ export const EMPTY_DEVICE: DeviceInput = {
   name: "",
   device_type: "Access Point",
   location: "",
+  serial_number: "",
+  image_url: "",
   ip_address: "",
   mac_address: "",
   username: "",
