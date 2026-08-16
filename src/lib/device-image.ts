@@ -48,19 +48,16 @@ export async function compressToWebp(file: File): Promise<Blob> {
 
 export async function uploadDeviceImage(file: File): Promise<string> {
   const blob = await compressToWebp(file);
-  const path = `${crypto.randomUUID()}.webp`;
+  const { path, token } = await createDeviceImageUpload({ data: { ext: "webp" } });
   const { error } = await supabase.storage
     .from(DEVICE_IMAGE_BUCKET)
-    .upload(path, blob, { contentType: "image/webp", upsert: false });
+    .uploadToSignedUrl(path, token, blob, { contentType: "image/webp" });
   if (error) throw new Error(error.message);
   return path;
 }
 
 export async function getDeviceImageUrl(path: string): Promise<string | null> {
   if (/^https?:\/\//.test(path)) return path;
-  const { data, error } = await supabase.storage
-    .from(DEVICE_IMAGE_BUCKET)
-    .createSignedUrl(path, 60 * 60);
-  if (error) return null;
-  return data.signedUrl;
+  const { url } = await getDeviceImageSignedUrl({ data: { path } });
+  return url;
 }
