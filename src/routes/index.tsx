@@ -116,6 +116,10 @@ function Dashboard() {
           </p>
         </section>
 
+        <Ether1Graph refreshKey={status?.checkedAt ? new Date(status.checkedAt).getTime() : 0} />
+
+
+
         {online && status.ok ? (
           <>
             <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
