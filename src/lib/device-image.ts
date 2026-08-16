@@ -1,6 +1,11 @@
 import { supabase } from "@/integrations/supabase/client";
+import {
+  DEVICE_IMAGE_BUCKET,
+  createDeviceImageUpload,
+  getDeviceImageSignedUrl,
+} from "./devices.functions";
 
-export const DEVICE_IMAGE_BUCKET = "device-images";
+export { DEVICE_IMAGE_BUCKET };
 const MAX_BYTES = 300 * 1024;
 
 function loadImage(file: File): Promise<HTMLImageElement> {
