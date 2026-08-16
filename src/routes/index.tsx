@@ -110,7 +110,7 @@ function Dashboard() {
           </div>
 
           <p className="mt-4 border-t border-border pt-3 text-xs text-muted-foreground">
-            Transport: {status?.transport ?? "RouterOS API (biner)"} · Pembaruan otomatis tiap 15
+            Transport: {status?.transport ?? "RouterOS API (biner)"} · Pembaruan otomatis tiap 60
             detik
             {error ? " · Terjadi gangguan pada server aplikasi" : ""}
           </p>
