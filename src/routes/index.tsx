@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 import { SiteHeader } from "../components/SiteHeader";
+import { Ether1Graph } from "../components/Ether1Graph";
 import { StatCard, UsageBar } from "../components/StatCard";
 import { getRouterStatus } from "../lib/mikrotik.functions";
 import { formatBytes, formatUptime } from "../lib/mikrotik-types";
@@ -44,7 +45,7 @@ function Dashboard() {
   const { data, isFetching, refetch, error } = useQuery({
     queryKey: ["router-status"],
     queryFn: () => fetchStatus(),
-    refetchInterval: 15000,
+    refetchInterval: 60000,
     refetchOnWindowFocus: true,
   });
 
@@ -110,11 +111,15 @@ function Dashboard() {
           </div>
 
           <p className="mt-4 border-t border-border pt-3 text-xs text-muted-foreground">
-            Transport: {status?.transport ?? "RouterOS API (biner)"} · Pembaruan otomatis tiap 15
+            Transport: {status?.transport ?? "RouterOS API (biner)"} · Pembaruan otomatis tiap 60
             detik
             {error ? " · Terjadi gangguan pada server aplikasi" : ""}
           </p>
         </section>
+
+        <Ether1Graph refreshKey={status?.checkedAt ? new Date(status.checkedAt).getTime() : 0} />
+
+
 
         {online && status.ok ? (
           <>

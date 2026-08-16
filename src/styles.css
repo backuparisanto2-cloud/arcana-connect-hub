@@ -196,3 +196,13 @@
 @utility animate-value {
   animation: value-in 0.35s ease-out;
 }
+
+@keyframes splash-bar {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(360%);
+  }
+}
+
