@@ -8,7 +8,7 @@ import { SiteHeader } from "../components/SiteHeader";
 import { getHotspotUsers } from "../lib/mikrotik.functions";
 import { formatBytes, formatUptime } from "../lib/mikrotik-types";
 
-export const Route = createFileRoute("/hotspot")({
+export const Route = createFileRoute("/_gated/hotspot")({
   head: () => ({
     meta: [
       { title: "User Hotspot — Griya Arca Putri" },

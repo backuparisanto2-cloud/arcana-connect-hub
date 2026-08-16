@@ -20,7 +20,7 @@ import { getRouterStatus } from "../lib/mikrotik.functions";
 import { formatBytes, formatUptime } from "../lib/mikrotik-types";
 
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/_gated/")({
   head: () => ({
     meta: [
       { title: "Griya Arca Putri — Monitor Jaringan Router" },
