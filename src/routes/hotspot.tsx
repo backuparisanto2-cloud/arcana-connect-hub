@@ -40,7 +40,7 @@ function HotspotPage() {
   const { data, isFetching, refetch } = useQuery({
     queryKey: ["hotspot-users"],
     queryFn: () => fetchHotspot(),
-    refetchInterval: 15000,
+    refetchInterval: 60000,
     refetchOnWindowFocus: true,
   });
 
@@ -72,7 +72,7 @@ function HotspotPage() {
           <div>
             <h2 className="font-display text-xl font-semibold sm:text-2xl">User Hotspot</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Daftar akun hotspot beserta status sesi. Pembaruan otomatis tiap 15 detik.
+              Daftar akun hotspot beserta status sesi. Pembaruan otomatis tiap 60 detik.
             </p>
           </div>
           <p className="text-xs text-muted-foreground">

@@ -44,7 +44,7 @@ function Dashboard() {
   const { data, isFetching, refetch, error } = useQuery({
     queryKey: ["router-status"],
     queryFn: () => fetchStatus(),
-    refetchInterval: 15000,
+    refetchInterval: 60000,
     refetchOnWindowFocus: true,
   });
 
